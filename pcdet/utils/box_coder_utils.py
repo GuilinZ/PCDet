@@ -126,7 +126,7 @@ class ResidualCoder(object):
             dir_cls_preds = dir_cls_preds.view(box_preds.shape[0], box_preds.shape[1], -1)
             if use_binary_dir_classifier:
                 dir_labels = torch.max(dir_cls_preds, dim=-1)[1]
-                opp_labels = (batch_box_preds[..., -1] > 0) ^ dir_labels.byte()
+                opp_labels = (batch_box_preds[..., -1] > 0) ^ dir_labels.bool()
                 batch_box_preds[..., -1] += torch.where(
                     opp_labels,
                     torch.tensor(np.pi).type_as(batch_box_preds),
