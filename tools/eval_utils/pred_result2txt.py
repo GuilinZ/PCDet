@@ -51,7 +51,7 @@ for i,frame in enumerate(results):
             line = " ".join(n for n in line)
             f.writelines(line+'\n')
     f.close()
-
+print("Transfer Done")
 
 # In[ ]:
 
