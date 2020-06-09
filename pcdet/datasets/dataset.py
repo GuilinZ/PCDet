@@ -79,11 +79,14 @@ class DatasetTemplate(torch_data.Dataset):
         """
         sample_idx = input_dict['sample_idx']
         points = input_dict['points']
-        calib = input_dict['calib']
+        if not cfg.TS_DATA:
+            calib = input_dict['calib']
 
         if has_label:
             gt_boxes = input_dict['gt_boxes_lidar'].copy()
+            # print('1: ', gt_boxes.shape)
             gt_names = input_dict['gt_names'].copy()
+            # print(gt_names)
 
         if self.training:
             selected = common_utils.drop_arrays_by_name(gt_names, ['DontCare', 'Sign'])
@@ -125,9 +128,11 @@ class DatasetTemplate(torch_data.Dataset):
                 )
 
             gt_boxes = gt_boxes[gt_boxes_mask]
+            # print(gt_boxes.shape)
             gt_names = gt_names[gt_boxes_mask]
 
             gt_classes = np.array([self.class_names.index(n) + 1 for n in gt_names], dtype=np.int32)
+            # print(gt_classes.shape)
 
             noise_global_scene = cfg.DATA_CONFIG.AUGMENTATION.NOISE_GLOBAL_SCENE
             if noise_global_scene.ENABLED:
@@ -140,10 +145,17 @@ class DatasetTemplate(torch_data.Dataset):
                 )
 
             pc_range = self.voxel_generator.point_cloud_range
+            # print('ori: ', gt_boxes.shape)
             mask = box_utils.mask_boxes_outside_range(gt_boxes, pc_range)
-            gt_boxes = gt_boxes[mask]
-            gt_classes = gt_classes[mask]
-            gt_names = gt_names[mask]
+            # print('aft: ', gt_boxes[mask].shape)
+            if gt_boxes[mask].shape[0]==0:
+                gt_boxes = gt_boxes
+                gt_classes = gt_classes
+                gt_names = gt_names
+            else:
+                gt_boxes = gt_boxes[mask]
+                gt_classes = gt_classes[mask]
+                gt_names = gt_names[mask]
 
             # limit rad to [-pi, pi]
             gt_boxes[:, 6] = common_utils.limit_period(gt_boxes[:, 6], offset=0.5, period=2 * np.pi)
@@ -191,15 +203,24 @@ class DatasetTemplate(torch_data.Dataset):
             example.update({
                 'gt_boxes': gt_boxes
             })
-
-        example.update({
-            'voxels': voxels,
-            'num_points': num_points,
-            'coordinates': coordinates,
-            'voxel_centers': voxel_centers,
-            'calib': input_dict['calib'],
-            'points': points
-        })
+        if not cfg.TS_DATA:
+            example.update({
+                'voxels': voxels,
+                'num_points': num_points,
+                'coordinates': coordinates,
+                'voxel_centers': voxel_centers,
+                'calib': input_dict['calib'],
+                'points': points
+            })
+        else:
+            example.update({
+                'voxels': voxels,
+                'num_points': num_points,
+                'coordinates': coordinates,
+                'voxel_centers': voxel_centers,
+                # 'calib': input_dict['calib'],
+                'points': points
+            })
 
         return example
 

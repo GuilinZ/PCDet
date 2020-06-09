@@ -171,20 +171,21 @@ def get_maxiou3d_with_same_class(rois, roi_labels, gt_boxes, gt_labels):
     """
     max_overlaps = rois.new_zeros(rois.shape[0])
     gt_assignment = roi_labels.new_zeros(roi_labels.shape[0])
+    try:
+        for k in range(gt_labels.min().item(), gt_labels.max().item() + 1):
+            roi_mask = (roi_labels == k)
+            gt_mask = (gt_labels == k)
+            if roi_mask.sum() > 0 and gt_mask.sum() > 0:
+                cur_roi = rois[roi_mask]
+                cur_gt = gt_boxes[gt_mask]
+                original_gt_assignment = gt_mask.nonzero().view(-1)
 
-    for k in range(gt_labels.min().item(), gt_labels.max().item() + 1):
-        roi_mask = (roi_labels == k)
-        gt_mask = (gt_labels == k)
-        if roi_mask.sum() > 0 and gt_mask.sum() > 0:
-            cur_roi = rois[roi_mask]
-            cur_gt = gt_boxes[gt_mask]
-            original_gt_assignment = gt_mask.nonzero().view(-1)
-
-            iou3d = iou3d_nms_utils.boxes_iou3d_gpu(cur_roi, cur_gt)  # (M, N)
-            cur_max_overlaps, cur_gt_assignment = torch.max(iou3d, dim=1)
-            max_overlaps[roi_mask] = cur_max_overlaps
-            gt_assignment[roi_mask] = original_gt_assignment[cur_gt_assignment]
-
+                iou3d = iou3d_nms_utils.boxes_iou3d_gpu(cur_roi, cur_gt)  # (M, N)
+                cur_max_overlaps, cur_gt_assignment = torch.max(iou3d, dim=1)
+                max_overlaps[roi_mask] = cur_max_overlaps
+                gt_assignment[roi_mask] = original_gt_assignment[cur_gt_assignment]
+    except:
+        pass
     return max_overlaps, gt_assignment
 
 

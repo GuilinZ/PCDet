@@ -36,7 +36,7 @@ class Detector3D(nn.Module):
             **vfe_cfg.ARGS
         )
         voxel_feature_num = self.vfe.get_output_feature_dim()
-
+        print('voxel_feature_num: ',voxel_feature_num)
         rpn_cfg = model_cfg.RPN
         self.rpn_net = rpn_modules[rpn_cfg.BACKBONE.NAME](
             input_channels=voxel_feature_num,

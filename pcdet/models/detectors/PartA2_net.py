@@ -32,7 +32,7 @@ class PartA2Net(Detector3D):
                 input_sp_tensor,
                 **kwargs
             )
-
+            # print('unet_ret_dict: ', unet_ret_dict['spatial_features'].shape)
             rpn_preds_dict = self.rpn_head(
                 unet_ret_dict['spatial_features'],
                 **{'gt_boxes': kwargs.get('gt_boxes', None)}
@@ -104,6 +104,7 @@ class PartA2Net(Detector3D):
         voxel_centers = input_dict['voxel_centers']
 
         rpn_ret_dict = self.forward_rpn(**input_dict)
+
         if cfg.MODEL.RCNN.ENABLED:
             anchors = rpn_ret_dict['anchors']
             anchors = anchors.view(1, -1, anchors.shape[-1]).repeat(batch_size, 1, 1)

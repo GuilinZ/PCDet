@@ -29,6 +29,7 @@ class Object3d(object):
         self.w = float(label[9])
         self.l = float(label[10])
         self.loc = np.array((float(label[11]), float(label[12]), float(label[13])), dtype=np.float32)
+        self.loc_lidar_cord = np.array((float(label[13]), -float(label[11]), -float(label[12])), dtype=np.float32)
         self.dis_to_cam = np.linalg.norm(self.loc)
         self.ry = float(label[14])
         self.score = float(label[15]) if label.__len__() == 16 else -1.0
@@ -37,7 +38,7 @@ class Object3d(object):
 
     def get_kitti_obj_level(self):
         height = float(self.box2d[3]) - float(self.box2d[1]) + 1
-
+        return 0
         if height >= 40 and self.truncation <= 0.15 and self.occlusion <= 0:
             self.level_str = 'Easy'
             return 0  # Easy

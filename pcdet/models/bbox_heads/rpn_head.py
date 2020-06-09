@@ -289,6 +289,7 @@ class RPNV2(AnchorHead):
         x = x_in
         ret_dict = {}
         for i in range(len(self.blocks)):
+            # print('x: ', x.shape, print("i: ", i))
             x = self.blocks[i](x)
 
             stride = int(x_in.shape[2] / x.shape[2])
