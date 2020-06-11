@@ -3,7 +3,7 @@ CLASS_NAMES: ['car','bigcar','ped','cyc']
 DATA_CONFIG:
     DATASET: 'KittiDataset'
     TS_DATA: True
-    DATA_SAMPLE_RANGE: 4000
+    DATA_SAMPLE_RANGE: 5000
     DATA_DIR: 'ts_data'
     FOV_POINTS_ONLY: False
     NUM_POINT_FEATURES: {
@@ -49,7 +49,7 @@ DATA_CONFIG:
             USE_ROAD_PLANE: True
 
     VOXEL_GENERATOR:
-        MAX_POINTS_PER_VOXEL: 5
+        MAX_POINTS_PER_VOXEL: 100
         VOXEL_SIZE: [0.2, 0.2, 0.1]
 
 
@@ -218,6 +218,6 @@ MODEL:
 
         BOX_FILTER: {
             'USE_IMAGE_AREA_FILTER': False,
-            'LIMIT_RANGE': [0, -40, -3.0, 70.4, 40, 3.0]
+            'LIMIT_RANGE': [-60, -60, -3.0, 60.16, 80.8, 1.0]
         }
 
