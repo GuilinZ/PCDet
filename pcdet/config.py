@@ -60,6 +60,6 @@ def cfg_from_yaml_file(cfg_file, config):
 
 cfg = EasyDict()
 cfg.ROOT_DIR = (Path(__file__).resolve().parent / '../').resolve()
-cfg.TS_DATA = True
+# cfg.ROOT_DIR = '/root/PCDet'
 cfg.LOCAL_RANK = 0
 

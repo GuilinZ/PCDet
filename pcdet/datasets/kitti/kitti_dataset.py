@@ -10,7 +10,7 @@ import spconv
 
 from pcdet.utils import box_utils, object3d_utils, calibration, common_utils
 from pcdet.ops.roiaware_pool3d import roiaware_pool3d_utils
-from pcdet.config import cfg
+from pcdet.config import cfg, log_config_to_file, cfg_from_list, cfg_from_yaml_file
 from pcdet.datasets.data_augmentation.dbsampler import DataBaseSampler
 from pcdet.datasets import DatasetTemplate
 
@@ -31,14 +31,16 @@ class BaseKittiDataset(DatasetTemplate):
         self.__init__(self.root_path, split)
 
     def get_lidar(self, idx):
-        if not cfg.TS_DATA:
+        if not cfg.DATA_CONFIG.TS_DATA:
             lidar_file = os.path.join(self.root_split_path, 'velodyne', '%s.bin' % idx)
             assert os.path.exists(lidar_file)
             return np.fromfile(lidar_file, dtype=np.float32).reshape(-1, 4)
         else:
             lidar_file = os.path.join(self.root_split_path, 'ts2kitti_lidar', '%s.npz' % idx)
             assert os.path.exists(lidar_file)
-            return np.load(lidar_file, allow_pickle=True)['pc'].reshape(-1, 3)
+            pc = np.load(lidar_file, allow_pickle=True)['pc'].reshape(-1, 3)
+            intensity = np.load(lidar_file, allow_pickle=True)['intensity'].reshape(-1, 1)
+            return np.concatenate((pc,intensity), axis=1).reshape(-1,4)
 
     def get_image_shape(self, idx):
         img_file = os.path.join(self.root_split_path, 'image_2', '%s.png' % idx)
@@ -46,10 +48,14 @@ class BaseKittiDataset(DatasetTemplate):
         return np.array(io.imread(img_file).shape[:2], dtype=np.int32)
 
     def get_label(self, idx):
-        label_file = os.path.join(self.root_split_path, 'label_2', '%s.txt' % idx)
-        assert os.path.exists(label_file)
-        return object3d_utils.get_objects_from_label(label_file)
-
+        if not cfg.DATA_CONFIG.TS_DATA:
+            label_file = os.path.join(self.root_split_path, 'label_2', '%s.txt' % idx)
+            assert os.path.exists(label_file)
+            return object3d_utils.get_objects_from_label(label_file)
+        else:
+            label_file = os.path.join(self.root_split_path, 'ts2kitti_label', '%s.txt' % idx)
+            assert os.path.exists(label_file)
+            return object3d_utils.get_objects_from_label(label_file)
     def get_calib(self, idx):
         calib_file = os.path.join(self.root_split_path, 'calib', '%s.txt' % idx)
         assert os.path.exists(calib_file)
@@ -92,13 +98,13 @@ class BaseKittiDataset(DatasetTemplate):
         def process_single_scene(sample_idx):
             print('%s sample_idx: %s' % (self.split, sample_idx))
             info = {}
-            if not cfg.TS_DATA:
+            if not cfg.DATA_CONFIG.TS_DATA:
                 pc_info = {'num_features': 4, 'lidar_idx': sample_idx}
             else:
-                pc_info = {'num_features': 3, 'lidar_idx': sample_idx}
+                pc_info = {'num_features': 4, 'lidar_idx': sample_idx}
             info['point_cloud'] = pc_info
 
-            if not cfg.TS_DATA:
+            if not cfg.DATA_CONFIG.TS_DATA:
                 image_info = {'image_idx': sample_idx, 'image_shape': self.get_image_shape(sample_idx)}
                 info['image'] = image_info
                 calib = self.get_calib(sample_idx)
@@ -121,7 +127,7 @@ class BaseKittiDataset(DatasetTemplate):
                 annotations['alpha'] = np.array([obj.alpha for obj in obj_list])
                 annotations['bbox'] = np.concatenate([obj.box2d.reshape(1, 4) for obj in obj_list], axis=0)
                 annotations['dimensions'] = np.array([[obj.l, obj.h, obj.w] for obj in obj_list])  # lhw(camera) format
-                if cfg.TS_DATA:
+                if cfg.DATA_CONFIG.TS_DATA:
                     annotations['location'] = np.concatenate([obj.loc_lidar_cord.reshape(1, 3) for obj in obj_list], axis=0)
                 else:
                     annotations['location'] = np.concatenate([obj.loc.reshape(1, 3) for obj in obj_list], axis=0)
@@ -137,7 +143,7 @@ class BaseKittiDataset(DatasetTemplate):
                 loc = annotations['location'][:num_objects]
                 dims = annotations['dimensions'][:num_objects]
                 rots = annotations['rotation_y'][:num_objects]
-                if not cfg.TS_DATA:
+                if not cfg.DATA_CONFIG.TS_DATA:
                     loc_lidar = calib.rect_to_lidar(loc)
                 else:
                     loc_lidar = loc
@@ -147,7 +153,7 @@ class BaseKittiDataset(DatasetTemplate):
 
                 info['annos'] = annotations
 
-                if count_inside_pts:
+                if count_inside_pts and not cfg.DATA_CONFIG.TS_DATA:
                     points = self.get_lidar(sample_idx)
                     calib = self.get_calib(sample_idx)
                     pts_rect = calib.lidar_to_rect(points[:, 0:3])
@@ -164,7 +170,7 @@ class BaseKittiDataset(DatasetTemplate):
 
             return info
 
-        # temp = process_single_scene(self.sample_id_list[0])
+        temp = process_single_scene(self.sample_id_list[0])
         sample_id_list = sample_id_list if sample_id_list is not None else self.sample_id_list
         with futures.ThreadPoolExecutor(num_workers) as executor:
             infos = executor.map(process_single_scene, sample_id_list)
@@ -381,7 +387,7 @@ class KittiDataset(BaseKittiDataset):
         for info_path in cfg.DATA_CONFIG[mode].INFO_PATH:
             info_path = cfg.ROOT_DIR / info_path
             with open(info_path, 'rb') as f:
-                infos = pickle.load(f)[:8000]
+                infos = pickle.load(f)[:cfg.DATA_CONFIG.DATA_SAMPLE_RANGE]
 
                 kitti_infos.extend(infos)
 
@@ -437,11 +443,11 @@ class KittiDataset(BaseKittiDataset):
         # index = 4
         # print("get_item_index: ", index)
         info = copy.deepcopy(self.kitti_infos[index])
-
+        # print(1111111111111)
         sample_idx = info['point_cloud']['lidar_idx']
 
         points = self.get_lidar(sample_idx)
-        if not cfg.TS_DATA:
+        if not cfg.DATA_CONFIG.TS_DATA:
             calib = self.get_calib(sample_idx)
             img_shape = info['image']['image_shape']
         if cfg.DATA_CONFIG.FOV_POINTS_ONLY:
@@ -449,7 +455,7 @@ class KittiDataset(BaseKittiDataset):
             fov_flag = self.get_fov_flag(pts_rect, img_shape, calib)
             points = points[fov_flag]
 
-        if not cfg.TS_DATA:
+        if not cfg.DATA_CONFIG.TS_DATA:
             input_dict = {
                 'points': points,
                 'sample_idx': sample_idx,
@@ -463,7 +469,10 @@ class KittiDataset(BaseKittiDataset):
 
         if 'annos' in info:
             annos = info['annos']
-            annos = common_utils.drop_info_with_name(annos, name='DontCare')
+            if not cfg.DATA_CONFIG.TS_DATA:
+                annos = common_utils.drop_info_with_name(annos, name='DontCare')
+            else:
+                annos = common_utils.drop_info_with_name(annos, name='0')
             loc, dims, rots = annos['location'], annos['dimensions'], annos['rotation_y']
             gt_names = annos['name']
             bbox = annos['bbox']
@@ -483,7 +492,7 @@ class KittiDataset(BaseKittiDataset):
         example = self.prepare_data(input_dict=input_dict, has_label='annos' in info)
 
         example['sample_idx'] = sample_idx
-        if not cfg.TS_DATA:
+        if not cfg.DATA_CONFIG.TS_DATA:
             example['image_shape'] = img_shape
 
         return example
@@ -515,23 +524,27 @@ def create_kitti_infos(data_path, save_path, workers=4):
     with open(trainval_filename, 'wb') as f:
         pickle.dump(kitti_infos_train + kitti_infos_val, f)
     print('Kitti info trainval file is saved to %s' % trainval_filename)
-
-    dataset.set_split('test')
-    kitti_infos_test = dataset.get_infos(num_workers=workers, has_label=False, count_inside_pts=False)
-    with open(test_filename, 'wb') as f:
-        pickle.dump(kitti_infos_test, f)
-    print('Kitti info test file is saved to %s' % test_filename)
+    #
+    # dataset.set_split('test')
+    # kitti_infos_test = dataset.get_infos(num_workers=workers, has_label=False, count_inside_pts=False)
+    # with open(test_filename, 'wb') as f:
+    #     pickle.dump(kitti_infos_test, f)
+    # print('Kitti info test file is saved to %s' % test_filename)
 
     print('---------------Start create groundtruth database for data augmentation---------------')
-    dataset.set_split(train_split)
-    dataset.create_groundtruth_database(train_filename, split=train_split)
+    if not cfg.DATA_CONFIG.TS_DATA:
+        dataset.set_split(train_split)
+        dataset.create_groundtruth_database(train_filename, split=train_split)
 
     print('---------------Data preparation Done---------------')
 
 
 if __name__ == '__main__':
     if sys.argv.__len__() > 1 and sys.argv[1] == 'create_kitti_infos':
-        if not cfg.TS_DATA:
+        cfg_file = sys.argv[2]
+        cfg_from_yaml_file(cfg_file, cfg)
+
+        if not cfg.DATA_CONFIG.TS_DATA:
             data_path = cfg.ROOT_DIR / 'data' / 'kitti'
             save_path = cfg.ROOT_DIR / 'data' / 'kitti'
         else:

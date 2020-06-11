@@ -2,6 +2,7 @@ CLASS_NAMES: ['Car', 'Pedestrian', 'Cyclist']
 
 DATA_CONFIG:
     DATASET: 'KittiDataset'
+    TS_DATA: False
     DATA_DIR: 'data/kitti'
     FOV_POINTS_ONLY: True
     NUM_POINT_FEATURES: {

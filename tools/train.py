@@ -23,7 +23,7 @@ def parge_config():
     parser.add_argument('--data_dir', type=str, default=None)
     parser.add_argument('--batch_size', type=int, default=16, required=False, help='batch size for training')
     parser.add_argument('--epochs', type=int, default=80, required=False, help='number of epochs to train for')
-    parser.add_argument('--workers', type=int, default=1, help='number of workers for dataloader')
+    parser.add_argument('--workers', type=int, default=0, help='number of workers for dataloader')
     parser.add_argument('--extra_tag', type=str, default='default', help='extra tag for this experiment')
     parser.add_argument('--ckpt', type=str, default=None, help='checkpoint to start from')
     parser.add_argument('--pretrained_model', type=str, default=None, help='pretrained_model')
@@ -33,7 +33,7 @@ def parge_config():
     parser.add_argument('--fix_random_seed', action='store_true', default=False, help='whether to use sync bn')
     parser.add_argument('--ckpt_save_interval', type=int, default=2, help='number of training epochs')
     parser.add_argument('--local_rank', type=int, default=0, help='local rank for distributed training')
-    parser.add_argument('--max_ckpt_save_num', type=int, default=30, help='max number of saved checkpoint')
+    parser.add_argument('--max_ckpt_save_num', type=int, default=40, help='max number of saved checkpoint')
     parser.add_argument('--set', dest='set_cfgs', default=None, nargs=argparse.REMAINDER,
                         help='set extra config keys if needed')
 
@@ -51,13 +51,13 @@ def main():
     args, cfg = parge_config()
     if args.launcher == 'none':
         dist_train = False
-    # else:
-    #     args.batch_size, cfg.LOCAL_RANK = getattr(common_utils, 'init_dist_%s' % args.launcher)(
-    #         args.batch_size, args.tcp_port, args.local_rank, backend='nccl'
-    #     )
-    # #     dist_train = True
-    # if args.fix_random_seed:
-    #     common_utils.set_random_seed(666)
+    else:
+        args.batch_size, cfg.LOCAL_RANK = getattr(common_utils, 'init_dist_%s' % args.launcher)(
+            args.batch_size, args.tcp_port, args.local_rank, backend='nccl'
+        )
+        dist_train = True
+    if args.fix_random_seed:
+        common_utils.set_random_seed(666)
 
     output_dir = cfg.ROOT_DIR / 'output' / cfg.TAG / args.extra_tag
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -72,9 +72,9 @@ def main():
     gpu_list = os.environ['CUDA_VISIBLE_DEVICES'] if 'CUDA_VISIBLE_DEVICES' in os.environ.keys() else 'ALL'
     logger.info('CUDA_VISIBLE_DEVICES=%s' % gpu_list)
 
-    # if dist_train:
-    #     total_gpus = dist.get_world_size()
-    #     logger.info('total_batch_size: %d' % (total_gpus * args.batch_size))
+    if dist_train:
+        total_gpus = dist.get_world_size()
+        logger.info('total_batch_size: %d' % (total_gpus * args.batch_size))
     for key, val in vars(args).items():
         logger.info('{:16} {}'.format(key, val))
     log_config_to_file(cfg, logger=logger)
@@ -103,6 +103,7 @@ def main():
         it, start_epoch = model.load_params_with_optimizer(args.ckpt, to_cpu=dist, optimizer=optimizer, logger=logger)
         last_epoch = start_epoch + 1
     else:
+        #查找ckpt文件夹所有文件，有的话取最后一个读参数
         ckpt_list = glob.glob(str(ckpt_dir / '*checkpoint_epoch_*.pth'))
         if len(ckpt_list) > 0:
             ckpt_list.sort(key=os.path.getmtime)
@@ -146,4 +147,5 @@ def main():
 
 
 if __name__ == '__main__':
+    print('11111111111111111111111111111111111111',cfg.ROOT_DIR)
     main()

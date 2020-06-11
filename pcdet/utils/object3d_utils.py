@@ -1,5 +1,5 @@
 import numpy as np
-
+# from pcdet.config import cfg
 
 def get_objects_from_label(label_file):
     with open(label_file, 'r') as f:
@@ -38,7 +38,9 @@ class Object3d(object):
 
     def get_kitti_obj_level(self):
         height = float(self.box2d[3]) - float(self.box2d[1]) + 1
-        return 0
+        if height==0:
+            self.level_str = 'Easy'
+            return 0
         if height >= 40 and self.truncation <= 0.15 and self.occlusion <= 0:
             self.level_str = 'Easy'
             return 0  # Easy

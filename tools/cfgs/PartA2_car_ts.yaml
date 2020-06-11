@@ -1,15 +1,16 @@
-CLASS_NAMES: ['car','bigcar','ped','0',]
+CLASS_NAMES: ['car','bigcar','ped','cyc']
 
 DATA_CONFIG:
     DATASET: 'KittiDataset'
     TS_DATA: True
+    DATA_SAMPLE_RANGE: 4000
     DATA_DIR: 'ts_data'
     FOV_POINTS_ONLY: False
     NUM_POINT_FEATURES: {
-        'total': 3,
-        'use': 3
+        'total': 4,
+        'use': 4
     }
-    POINT_CLOUD_RANGE: [-80, -60, -3, 80, 80.8, 1]
+    POINT_CLOUD_RANGE: [-60, -60, -3, 61.6, 80.8, 1]
     MASK_POINTS_BY_RANGE: True
 
     TRAIN:
@@ -102,30 +103,30 @@ MODEL:
                 SAMPLE_SIZE: 512
 
                 ANCHOR_GENERATOR: [
-                    {'anchor_range': [-80, -60.0, -1.78, 80, 80.8, -1.78],
-                     'sizes': [[1.6, 3.9, 1.56]],
+                    {'anchor_range': [-60, -60, -1.78, 61.6, 80.8, -1.78],
+                     'sizes': [[2.2, 5.0, 2.0]],
                      'rotations': [0, 1.57],
                      'matched_threshold': 0.6,
                      'unmatched_threshold': 0.45,
                      'class_name': 'car'},
-                    {'anchor_range': [-80, -60.0, -1.78, 80, 80.8, -1.78],
-                     'sizes': [[0.6, 0.8, 1.73]],
-                     'rotations': [0, 1.57],
-                     'matched_threshold': 0.5,
-                     'unmatched_threshold': 0.35,
-                     'class_name': 'ped'},
-                    {'anchor_range': [-80, -60.0, -1.78, 80, 80.8, -1.78],
-                     'sizes': [[2.0, 4.5, 1.8]],
+                    {'anchor_range': [-60, -60, -1.78, 61.6, 80.8, -1.78],
+                     'sizes': [[3.5, 18.0, 4.0]],
                      'rotations': [0, 1.57],
                      'matched_threshold': 0.6,
                      'unmatched_threshold': 0.45,
                      'class_name': 'bigcar'},
-                    {'anchor_range': [-80, -60.0, -1.78, 80, 80.8, -1.78],
-                     'sizes': [[1.6, 3.9, 1.56]],
+                    {'anchor_range': [-60, -60, -1.78, 61.6, 80.8, -1.78],
+                     'sizes': [[0.75, 0.75, 1.8]],
                      'rotations': [0, 1.57],
-                     'matched_threshold': 0.6,
-                     'unmatched_threshold': 0.45,
-                     'class_name': '0'},
+                     'matched_threshold': 0.5,
+                     'unmatched_threshold': 0.35,
+                     'class_name': 'ped'},
+                    {'anchor_range': [-60, -60, -1.78, 61.6, 80.8, -1.78],
+                     'sizes': [[1.3, 2.5, 2.0]],
+                     'rotations': [0, 1.57],
+                     'matched_threshold': 0.5,
+                     'unmatched_threshold': 0.35,
+                     'class_name': 'cyc'},
                 ]
 
     RCNN:

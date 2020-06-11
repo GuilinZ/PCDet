@@ -79,7 +79,7 @@ class DatasetTemplate(torch_data.Dataset):
         """
         sample_idx = input_dict['sample_idx']
         points = input_dict['points']
-        if not cfg.TS_DATA:
+        if not cfg.DATA_CONFIG.TS_DATA:
             calib = input_dict['calib']
 
         if has_label:
@@ -203,7 +203,7 @@ class DatasetTemplate(torch_data.Dataset):
             example.update({
                 'gt_boxes': gt_boxes
             })
-        if not cfg.TS_DATA:
+        if not cfg.DATA_CONFIG.TS_DATA:
             example.update({
                 'voxels': voxels,
                 'num_points': num_points,
