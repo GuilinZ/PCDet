@@ -10,7 +10,7 @@ DATA_CONFIG:
         'total': 4,
         'use': 4
     }
-    POINT_CLOUD_RANGE: [-60, -60, -3, 61.6, 80.8, 1]
+    POINT_CLOUD_RANGE: [-60, -60, -4, 61.6, 80.8, 4]
     MASK_POINTS_BY_RANGE: True
 
     TRAIN:
@@ -18,14 +18,14 @@ DATA_CONFIG:
             ts_data/kitti_infos_train.pkl
         ]
         SHUFFLE_POINTS: True
-        MAX_NUMBER_OF_VOXELS: 16000
+        MAX_NUMBER_OF_VOXELS: 30000
 
     TEST:
         INFO_PATH: [
-            ts_data/kitti_infos_val.pkl
+            ts_data/kitti_infos_train.pkl
         ]
         SHUFFLE_POINTS: False
-        MAX_NUMBER_OF_VOXELS: 40000
+        MAX_NUMBER_OF_VOXELS: 30000
 
     AUGMENTATION:
         NOISE_PER_OBJECT:
@@ -49,8 +49,8 @@ DATA_CONFIG:
             USE_ROAD_PLANE: True
 
     VOXEL_GENERATOR:
-        MAX_POINTS_PER_VOXEL: 100
-        VOXEL_SIZE: [0.2, 0.2, 0.1]
+        MAX_POINTS_PER_VOXEL: 50
+        VOXEL_SIZE: [0.2, 0.2, 0.2]
 
 
 MODEL:
@@ -71,7 +71,8 @@ MODEL:
                 MEAN_SIZE: {
                     'car': [2.2, 5.0, 2.0],
                     'ped': [0.75, 0.75, 1.8],
-                    'bigcar': [3.5, 18.0, 4.0]
+                    'bigcar': [3.5, 18.0, 4.0],
+                    'cyc': [1.3, 2.5, 2.0]
                 }
 
         RPN_HEAD:
@@ -96,9 +97,9 @@ MODEL:
 
             TARGET_CONFIG:
                 DOWNSAMPLED_FACTOR: 8
-                BOX_CODER: ResidualCoder
+                BOX_CODER: ResidualCoder #定义了一个boxcoder,code_size=7
 
-                REGION_SIMILARITY_FN: nearest_iou_similarity
+                REGION_SIMILARITY_FN: nearest_iou_similarity #算iou的calculator, 2d bev 上面算iou
                 SAMPLE_POS_FRACTION: -1.0
                 SAMPLE_SIZE: 512
 
@@ -112,8 +113,8 @@ MODEL:
                     {'anchor_range': [-60, -60, -1.78, 61.6, 80.8, -1.78],
                      'sizes': [[3.5, 18.0, 4.0]],
                      'rotations': [0, 1.57],
-                     'matched_threshold': 0.6,
-                     'unmatched_threshold': 0.45,
+                     'matched_threshold': 0.4,
+                     'unmatched_threshold': 0.25,
                      'class_name': 'bigcar'},
                     {'anchor_range': [-60, -60, -1.78, 61.6, 80.8, -1.78],
                      'sizes': [[0.75, 0.75, 1.8]],
@@ -218,6 +219,6 @@ MODEL:
 
         BOX_FILTER: {
             'USE_IMAGE_AREA_FILTER': False,
-            'LIMIT_RANGE': [-60, -60, -3.0, 60.16, 80.8, 1.0]
+            'LIMIT_RANGE': [-60, -60, -4.0, 61.6, 80.8, 4.0]
         }
 
