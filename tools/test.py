@@ -14,7 +14,7 @@ from pcdet.utils import common_utils
 from pcdet.config import cfg, cfg_from_list, cfg_from_yaml_file, log_config_to_file
 from eval_utils import eval_utils
 
-
+import spconv
 def parge_config():
     parser = argparse.ArgumentParser(description='arg parser')
     parser.add_argument('--cfg_file', type=str, default=None, help='specify the config for training')
@@ -22,7 +22,7 @@ def parge_config():
     parser.add_argument('--data_dir', type=str, default=None)
     parser.add_argument('--batch_size', type=int, default=16, required=False, help='batch size for training')
     parser.add_argument('--epochs', type=int, default=80, required=False, help='Number of epochs to train for')
-    parser.add_argument('--workers', type=int, default=4, help='number of workers for dataloader')
+    parser.add_argument('--workers', type=int, default=0, help='number of workers for dataloader')
     parser.add_argument('--extra_tag', type=str, default='default', help='extra tag for this experiment')
     parser.add_argument('--ckpt', type=str, default=None, help='checkpoint to start from')
     parser.add_argument('--mgpus', action='store_true', default=False, help='whether to use multiple gpu')
@@ -155,6 +155,7 @@ def main():
     # log to file
     logger.info('**********************Start logging**********************')
     gpu_list = os.environ['CUDA_VISIBLE_DEVICES'] if 'CUDA_VISIBLE_DEVICES' in os.environ.keys() else 'ALL'
+    # gpu_list='1'
     logger.info('CUDA_VISIBLE_DEVICES=%s' % gpu_list)
 
     if dist_test:
